@@ -1,0 +1,64 @@
+// DBML (Database Markup Language)
+// Use this file to visualize the schema at dbdiagram.io
+
+Enum role_enum {
+  admin
+  member
+}
+
+Enum priority_enum {
+  low
+  medium
+  high
+}
+
+Enum status_enum {
+  todo
+  in_progress
+  done
+}
+
+Table users {
+  id integer [primary key, increment]
+  name varchar [not null]
+  email varchar [unique, not null]
+  hashed_password varchar [not null]
+  created_at timestamp [default: `now()`]
+}
+
+Table projects {
+  id integer [primary key, increment]
+  name varchar [not null]
+  description text
+  created_by integer [not null, note: 'User ID of the creator (Admin)']
+  created_at timestamp [default: `now()`]
+}
+
+Table project_members {
+  id integer [primary key, increment]
+  project_id integer [not null]
+  user_id integer [not null]
+  role role_enum [not null, default: 'member']
+}
+
+Table tasks {
+  id integer [primary key, increment]
+  title varchar [not null]
+  description text
+  due_date date [not null]
+  priority priority_enum [not null, default: 'medium']
+  status status_enum [not null, default: 'todo']
+  project_id integer [not null]
+  assigned_to integer [note: 'Nullable']
+  created_by integer [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+// Relationships
+Ref: projects.created_by > users.id
+Ref: project_members.project_id > projects.id [delete: cascade]
+Ref: project_members.user_id > users.id [delete: cascade]
+Ref: tasks.project_id > projects.id [delete: cascade]
+Ref: tasks.assigned_to > users.id
+Ref: tasks.created_by > users.id

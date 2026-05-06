@@ -1,0 +1,178 @@
+# =============================================================
+#  Team Task Manager — .gitignore
+#  Covers: Flutter Web + FastAPI (Python) + PostgreSQL + Railway
+# =============================================================
+
+
+# ─────────────────────────────────────────
+#  PYTHON / FASTAPI (backend/)
+# ─────────────────────────────────────────
+
+# Virtual environment
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+coverage.xml
+
+# MyPy / type checking
+.mypy_cache/
+.dmypy.json
+
+# Alembic (keep alembic.ini and versions/, ignore temp)
+*.pyc
+
+# Logs
+*.log
+logs/
+
+# Jupyter Notebooks (if any)
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+
+# ─────────────────────────────────────────
+#  FLUTTER / DART (frontend/)
+# ─────────────────────────────────────────
+
+# Flutter build outputs
+frontend/build/
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/pubspec.lock
+
+# Dart generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Flutter web specific
+frontend/web/*.js.map
+
+# Flutter cache
+frontend/.pub-cache/
+frontend/.pub/
+
+# IDE-generated Flutter files
+frontend/.idea/
+frontend/*.iml
+frontend/android/.gradle/
+frontend/ios/Pods/
+
+# Dart analysis cache
+frontend/.dart_tool/
+
+# Coverage
+frontend/coverage/
+
+
+# ─────────────────────────────────────────
+#  IDE & EDITOR
+# ─────────────────────────────────────────
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# JetBrains / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim / Emacs
+*.swp
+*.swo
+*~
+\#*\#
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+
+# ─────────────────────────────────────────
+#  OPERATING SYSTEM
+# ─────────────────────────────────────────
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+
+# ─────────────────────────────────────────
+#  DEPLOYMENT / RAILWAY
+# ─────────────────────────────────────────
+
+# Railway local config
+.railway/
+
+# Docker (if added later)
+*.dockerignore
+docker-compose.override.yml
+
+# Node (if any tooling is added)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+# ─────────────────────────────────────────
+#  SECRETS & SENSITIVE FILES
+# ─────────────────────────────────────────
+
+# Never commit secrets
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+service_account.json
+firebase_options.dart
+google-services.json
+GoogleService-Info.plist
+
+best_practices.md
