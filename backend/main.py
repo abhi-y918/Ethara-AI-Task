@@ -15,7 +15,13 @@ load_dotenv()
 
 # Initialize Firebase Admin SDK
 if not firebase_admin._apps:
-    cred = credentials.Certificate(os.path.join(os.path.dirname(__file__), 'firebase_service_account.json'))
+    import json
+    firebase_creds_env = os.getenv('FIREBASE_CREDENTIALS')
+    if firebase_creds_env:
+        cred_dict = json.loads(firebase_creds_env)
+        cred = credentials.Certificate(cred_dict)
+    else:
+        cred = credentials.Certificate(os.path.join(os.path.dirname(__file__), 'firebase_service_account.json'))
     firebase_admin.initialize_app(cred)
 
 app = FastAPI(
@@ -26,11 +32,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost",
-        "http://127.0.0.1",
-    ],
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1):\d+$",
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
