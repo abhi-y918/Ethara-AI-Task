@@ -47,14 +47,27 @@ def create_project(payload: schemas.ProjectCreate, db: Session = Depends(get_db)
 # GET /api/projects/{id}
 @router.get("/{project_id}", response_model=schemas.ProjectOut)
 def get_project(project_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    member = get_project_member(db, project_id, current_user.id)
-    if not member:
-        raise HTTPException(status_code=403, detail="Not authorized to view this project")
-    return member.project
+    if not current_user.is_superadmin:
+        member = get_project_member(db, project_id, current_user.id)
+        if not member:
+            raise HTTPException(status_code=403, detail="Not authorized to view this project")
+            
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
 
 # DELETE /api/projects/{id}
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_project(project_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    if current_user.is_superadmin:
+        project = db.query(models.Project).filter(models.Project.id == project_id).first()
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        db.delete(project)
+        db.commit()
+        return
+
     member = get_project_member(db, project_id, current_user.id)
     if not member or member.role != models.RoleEnum.admin:
         raise HTTPException(status_code=403, detail="Only admins can delete projects")
@@ -89,26 +102,40 @@ def add_member(project_id: int, payload: schemas.AddMember, db: Session = Depend
 # DELETE /api/projects/{id}/members/{user_id}
 @router.delete("/{project_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_member(project_id: int, user_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    member = get_project_member(db, project_id, current_user.id)
-    if not member or member.role != models.RoleEnum.admin:
-        raise HTTPException(status_code=403, detail="Only admins can remove members")
-        
     member_to_remove = get_project_member(db, project_id, user_id)
     if not member_to_remove:
         raise HTTPException(status_code=404, detail="Member not found")
         
+    if not current_user.is_superadmin:
+        member = get_project_member(db, project_id, current_user.id)
+        if not member or member.role != models.RoleEnum.admin:
+            raise HTTPException(status_code=403, detail="Only admins can remove members")
+        
     if member_to_remove.user_id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot remove yourself")
         
+    if current_user.is_superadmin and member_to_remove.role == models.RoleEnum.admin:
+        sa_member = get_project_member(db, project_id, current_user.id)
+        if not sa_member:
+            new_sa_member = models.ProjectMember(
+                project_id=project_id,
+                user_id=current_user.id,
+                role=models.RoleEnum.admin
+            )
+            db.add(new_sa_member)
+        elif sa_member.role != models.RoleEnum.admin:
+            sa_member.role = models.RoleEnum.admin
+            
     db.delete(member_to_remove)
     db.commit()
 
 # GET /api/projects/{id}/members
 @router.get("/{project_id}/members")
 def list_members(project_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    member = get_project_member(db, project_id, current_user.id)
-    if not member:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    if not current_user.is_superadmin:
+        member = get_project_member(db, project_id, current_user.id)
+        if not member:
+            raise HTTPException(status_code=403, detail="Not authorized")
     
     members = db.query(models.ProjectMember).filter(
         models.ProjectMember.project_id == project_id
@@ -127,9 +154,10 @@ def list_members(project_id: int, db: Session = Depends(get_db), current_user: m
 # GET /api/projects/{id}/tasks
 @router.get("/{project_id}/tasks", response_model=list[schemas.TaskOut])
 def list_tasks(project_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    member = get_project_member(db, project_id, current_user.id)
-    if not member:
-        raise HTTPException(status_code=403, detail="Not authorized to view tasks")
+    if not current_user.is_superadmin:
+        member = get_project_member(db, project_id, current_user.id)
+        if not member:
+            raise HTTPException(status_code=403, detail="Not authorized to view tasks")
         
     tasks = db.query(models.Task).filter(models.Task.project_id == project_id).all()
     return tasks

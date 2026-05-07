@@ -1,5 +1,7 @@
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+# pyrefly: ignore [missing-import]
 from datetime import date, datetime
 from models import RoleEnum, PriorityEnum, StatusEnum
 
@@ -15,10 +17,23 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class UserUpdateName(BaseModel):
+    name: str
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+    is_superadmin: Optional[bool] = False
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
 class UserOut(BaseModel):
     id: int
     name: str
     email: str
+    is_superadmin: Optional[bool] = False
     google_id: Optional[str] = None
     created_at: datetime
     class Config:

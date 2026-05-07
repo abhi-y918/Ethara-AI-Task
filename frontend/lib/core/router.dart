@@ -9,6 +9,7 @@ import '../pages/dashboard_page.dart';
 import '../pages/projects_page.dart';
 import '../pages/project_detail_page.dart';
 import '../pages/task_detail_page.dart';
+import '../pages/admin_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -35,6 +36,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: kRouteTaskDetail,
         builder: (_, state) => TaskDetailPage(taskId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (_, __) => const AdminPage(),
       ),
     ],
   );

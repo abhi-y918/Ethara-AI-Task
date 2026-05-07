@@ -67,6 +67,16 @@ class ProjectNotifier extends StateNotifier<ProjectState> {
       throw Exception(msg);
     }
   }
+
+  Future<void> removeMember(int projectId, int userId) async {
+    try {
+      await _service.removeMember(projectId, userId);
+    } catch (e) {
+      final msg = _parseError(e);
+      state = state.copyWith(error: msg);
+      throw Exception(msg);
+    }
+  }
 }
 
 final projectProvider = StateNotifierProvider<ProjectNotifier, ProjectState>(

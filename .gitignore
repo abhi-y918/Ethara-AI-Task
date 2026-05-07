@@ -176,3 +176,5 @@ google-services.json
 GoogleService-Info.plist
 
 best_practices.md
+backend/firebase_service_account.json
+

@@ -55,13 +55,14 @@ class TaskNotifier extends StateNotifier<TaskState> {
     }
   }
 
-  Future<void> createTask(int projectId, String title, String? description, String dueDate, String priority) async {
+  Future<void> createTask(int projectId, String title, String? description, String dueDate, String priority, {int? assignedTo}) async {
     try {
       final task = await _service.createTask(projectId, {
         'title': title,
         'description': description,
         'due_date': dueDate,
         'priority': priority,
+        if (assignedTo != null) 'assigned_to': assignedTo,
       });
       state = state.copyWith(tasks: [...state.tasks, task]);
     } catch (e) {

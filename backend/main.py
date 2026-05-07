@@ -9,7 +9,7 @@ import os
 import firebase_admin
 from firebase_admin import credentials
 
-from routers import auth, projects, tasks, dashboard
+from routers import auth, projects, tasks, dashboard, admin
 
 load_dotenv()
 
@@ -40,6 +40,7 @@ app.include_router(auth.router,      prefix="/api/auth",      tags=["Auth"])
 app.include_router(projects.router,  prefix="/api/projects",  tags=["Projects"])
 app.include_router(tasks.router,     prefix="/api/tasks",     tags=["Tasks"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
+app.include_router(admin.router,     prefix="/api/admin",     tags=["Admin"])
 
 
 @app.get("/health", tags=["Health"])

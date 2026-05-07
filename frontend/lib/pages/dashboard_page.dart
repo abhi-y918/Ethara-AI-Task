@@ -27,7 +27,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     final totalTasks = stats['total_tasks'] ?? 0;
     final byStatus = stats['by_status'] as Map<String, dynamic>? ?? {'todo': 0, 'in_progress': 0, 'done': 0};
-    final tasksPerUser = (stats['tasks_per_user'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+    final myTasks = (stats['my_tasks'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
     final overdueTasks = (stats['overdue_tasks'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
 
     return Scaffold(
@@ -74,6 +74,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 context.go('/projects');
               },
             ),
+            if (authState.user?.isSuperadmin == true) ...[
+              const Divider(color: Colors.white12),
+              ListTile(
+                leading: const Icon(Icons.admin_panel_settings, color: Color(0xFFEF4444)),
+                title: const Text('Super Admin Panel', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.go('/admin');
+                },
+              ),
+            ],
             const Divider(color: Colors.white12),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.white),
@@ -171,15 +182,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       Expanded(
                         flex: 2,
                         child: _buildChartContainer(
-                          'Workload by User',
-                          tasksPerUser.isEmpty
+                          'My Workload',
+                          myTasks.isEmpty
                               ? const SizedBox(
                                   height: 200,
                                   child: Center(
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.people_outline, color: Colors.white24, size: 48),
+                                        Icon(Icons.assignment_turned_in, color: Colors.white24, size: 48),
                                         SizedBox(height: 12),
                                         Text('No active tasks assigned', style: TextStyle(color: Colors.white38, fontSize: 14)),
                                       ],
@@ -187,15 +198,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                   ),
                                 )
                               : Column(
-                                  children: tasksPerUser.map((user) {
-                                    final name = user['user_name'] as String;
-                                    final email = user['email'] as String? ?? '';
-                                    final todo = user['todo'] as int? ?? 0;
-                                    final inProgress = user['in_progress'] as int? ?? 0;
+                                  children: myTasks.map((t) {
+                                    final projectName = t['project_name'] as String;
+                                    final taskTitle = t['task_title'] as String;
+                                    final todo = t['todo'] as int? ?? 0;
+                                    final inProgress = t['in_progress'] as int? ?? 0;
                                     final total = todo + inProgress;
                                     final todoFrac = total > 0 ? todo / total : 0.0;
-                                    final initials = name.isNotEmpty ? name[0].toUpperCase() : '?';
-
+                                    final initials = projectName.isNotEmpty ? projectName[0].toUpperCase() : 'P';
+                                    
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 16),
                                       padding: const EdgeInsets.all(16),
@@ -219,8 +230,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                                 child: Column(
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
-                                                    Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                                                    Text(email, style: const TextStyle(color: Colors.white38, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                                    Text(projectName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                                                    Text(taskTitle, style: const TextStyle(color: Colors.white38, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                                                   ],
                                                 ),
                                               ),
@@ -340,24 +351,30 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget _buildStatCard(String title, String value, IconData icon, List<Color> gradient) {
     return Expanded(
       child: Container(
+        height: 140,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [BoxShadow(color: gradient[0].withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
-                Icon(icon, color: Colors.white54, size: 24),
-              ],
+            Align(
+              alignment: Alignment.topRight,
+              child: Icon(icon, color: Colors.white38, size: 28),
             ),
-            const SizedBox(height: 16),
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+            Align(
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Text(value, style: const TextStyle(color: Colors.white, fontSize: 42, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -373,9 +390,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          Center(
+            child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
           const SizedBox(height: 32),
           chart,
         ],

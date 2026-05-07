@@ -31,11 +31,21 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     return me['role'] == 'admin';
   }
 
-  Future<void> _loadMembers() async {
+  bool get _isSuperAdmin {
+    return ref.read(authProvider).user?.isSuperadmin ?? false;
+  }
+
+  bool get _canManageMembers => _isAdmin || _isSuperAdmin;
+
+  ProjectModel? _project;
+
+  Future<void> _loadData() async {
     setState(() => _membersLoading = true);
     try {
+      final project = await ProjectService().getProject(int.parse(widget.projectId));
       final members = await ProjectService().getMembers(int.parse(widget.projectId));
       setState(() {
+        _project = project;
         _members = members;
         _membersLoading = false;
       });
@@ -53,12 +63,14 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
         ref.read(projectProvider.notifier).loadProjects();
       }
     });
-    _loadMembers();
+    _loadData();
   }
 
   void _showCreateTaskDialog() {
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
+    final assignNameCtrl = TextEditingController();
+    final assignEmailCtrl = TextEditingController();
     DateTime? selectedDate = DateTime.now().add(const Duration(days: 7));
     String priority = 'medium';
 
@@ -174,6 +186,40 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: assignNameCtrl,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Assignee Name (optional)',
+                              labelStyle: const TextStyle(color: Colors.white70),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF7C3AED))),
+                              filled: true,
+                              fillColor: Colors.black.withOpacity(0.2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextField(
+                            controller: assignEmailCtrl,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Assignee Email (optional)',
+                              labelStyle: const TextStyle(color: Colors.white70),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF7C3AED))),
+                              filled: true,
+                              fillColor: Colors.black.withOpacity(0.2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 32),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -186,12 +232,29 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                         ElevatedButton(
                           onPressed: () {
                             if (titleCtrl.text.trim().isNotEmpty && selectedDate != null) {
+                              int? assignedUserId;
+                              final name = assignNameCtrl.text.trim();
+                              final email = assignEmailCtrl.text.trim();
+
+                              if (name.isNotEmpty || email.isNotEmpty) {
+                                final member = _members.firstWhere(
+                                  (m) => m['name'] == name && m['email'] == email,
+                                  orElse: () => <String, dynamic>{},
+                                );
+                                if (member.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Not in the team with name and email'), backgroundColor: Colors.redAccent));
+                                  return;
+                                }
+                                assignedUserId = member['user_id'];
+                              }
+
                               ref.read(taskProvider.notifier).createTask(
                                 int.parse(widget.projectId),
                                 titleCtrl.text.trim(),
                                 descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
                                 DateFormat('yyyy-MM-dd').format(selectedDate!),
                                 priority,
+                                assignedTo: assignedUserId,
                               );
                               Navigator.pop(context);
                             }
@@ -278,7 +341,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                             if (context.mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Member added successfully!'), backgroundColor: Color(0xFF10B981)));
-                              _loadMembers(); // Refresh members list
+                              _loadData(); // Refresh members list
                             }
                           } catch (e) {
                             if (context.mounted) {
@@ -341,12 +404,8 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
             if (_membersLoading)
               const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF59E0B))))
             else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _members.length,
-                itemBuilder: (context, index) {
-                  final member = _members[index];
+              Column(
+                children: _members.map((member) {
                   final isAdmin = member['role'] == 'admin';
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -413,10 +472,43 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                             ),
                           ),
                         ),
+                        if (_canManageMembers && member['email'] != ref.read(authProvider).user?.email)
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: const Color(0xFF2A2D3E),
+                                  title: const Text('Remove Member', style: TextStyle(color: Colors.white)),
+                                  content: Text('Are you sure you want to remove ${member['name']}?', style: const TextStyle(color: Colors.white70)),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('Remove', style: TextStyle(color: Colors.redAccent)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                try {
+                                  await ref.read(projectProvider.notifier).removeMember(int.parse(widget.projectId), member['user_id']);
+                                  _loadData();
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.redAccent));
+                                  }
+                                }
+                              }
+                            },
+                          ),
                       ],
                     ),
                   );
-                },
+                }).toList(),
               ),
           ],
         ),
@@ -427,26 +519,25 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(taskProvider);
-    final projectState = ref.watch(projectProvider);
-    
-    // Find the current project from the provider to get its name
-    final currentProject = projectState.projects.firstWhere(
-      (p) => p.id.toString() == widget.projectId,
-      orElse: () => ProjectModel(id: int.parse(widget.projectId), name: 'Project #${widget.projectId}', createdBy: 0, createdAt: ''),
-    );
 
     return Scaffold(
       backgroundColor: const Color(0xFF13141C),
       appBar: AppBar(
-        title: Text(currentProject.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(_project?.name ?? 'Loading...', style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/projects'),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/projects');
+            }
+          },
         ),
         actions: [
-          if (_isAdmin)
+          if (_canManageMembers)
             TextButton.icon(
               onPressed: _showInviteMemberDialog,
               icon: const Icon(Icons.person_add_alt_1, color: Colors.white),
@@ -468,7 +559,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
           const SizedBox(width: 16),
         ],
       ),
-      floatingActionButton: _isAdmin
+      floatingActionButton: _canManageMembers
           ? FloatingActionButton.extended(
               onPressed: _showCreateTaskDialog,
               backgroundColor: const Color(0xFF7C3AED),
@@ -482,17 +573,19 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildKanbanColumn('To Do', _filterByStatus(state.tasks, TaskStatus.todo), const Color(0xFF7C3AED), TaskStatus.todo),
-                  const SizedBox(width: 24),
-                  _buildKanbanColumn('In Progress', _filterByStatus(state.tasks, TaskStatus.in_progress), const Color(0xFF06B6D4), TaskStatus.in_progress),
-                  const SizedBox(width: 24),
-                  _buildKanbanColumn('Done', _filterByStatus(state.tasks, TaskStatus.done), const Color(0xFF10B981), TaskStatus.done),
-                  const SizedBox(width: 24),
-                  _buildTeamColumn(),
-                ],
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildKanbanColumn('To Do', _filterByStatus(state.tasks, TaskStatus.todo), const Color(0xFF7C3AED), TaskStatus.todo),
+                    const SizedBox(width: 24),
+                    _buildKanbanColumn('In Progress', _filterByStatus(state.tasks, TaskStatus.in_progress), const Color(0xFF06B6D4), TaskStatus.in_progress),
+                    const SizedBox(width: 24),
+                    _buildKanbanColumn('Done', _filterByStatus(state.tasks, TaskStatus.done), const Color(0xFF10B981), TaskStatus.done),
+                    const SizedBox(width: 24),
+                    _buildTeamColumn(),
+                  ],
+                ),
               ),
             ),
     );
@@ -532,15 +625,25 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
               ],
             ),
             const SizedBox(height: 16),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: tasks.length,
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                return _buildTaskCard(task);
-              },
-            ),
+            if (tasks.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: Text(
+                    columnStatus == TaskStatus.todo
+                        ? 'No tasks to do'
+                        : columnStatus == TaskStatus.in_progress
+                            ? 'No task is in progress'
+                            : 'There no done tasks',
+                    style: const TextStyle(color: Colors.white38, fontStyle: FontStyle.italic),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            else
+              Column(
+                children: tasks.map((task) => _buildTaskCard(task)).toList(),
+              ),
           ],
         ),
       ),

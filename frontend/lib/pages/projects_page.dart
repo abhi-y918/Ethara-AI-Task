@@ -179,6 +179,17 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
                 Navigator.pop(context);
               },
             ),
+            if (authState.user?.isSuperadmin == true) ...[
+              const Divider(color: Colors.white12),
+              ListTile(
+                leading: const Icon(Icons.admin_panel_settings, color: Color(0xFFEF4444)),
+                title: const Text('Super Admin Panel', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.go('/admin');
+                },
+              ),
+            ],
             const Divider(color: Colors.white12),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.white),
@@ -246,7 +257,7 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: () => context.go('/projects/${project.id}'),
+                          onTap: () => context.push('/projects/${project.id}'),
                           borderRadius: BorderRadius.circular(20),
                           hoverColor: Colors.white.withOpacity(0.05),
                           child: Padding(
