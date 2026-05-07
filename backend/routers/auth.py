@@ -1,11 +1,56 @@
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
+
 from database import get_db
 from dependencies import get_current_user
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import models, schemas, auth as auth_utils, utils
+from firebase_admin import auth as firebase_auth
 
 router = APIRouter()
+
+
+# POST /api/auth/google — Firebase Google Sign-In
+@router.post("/google", status_code=status.HTTP_200_OK)
+def google_login(payload: dict, response: Response, db: Session = Depends(get_db)):
+    id_token = payload.get("id_token")
+    if not id_token:
+        raise HTTPException(status_code=400, detail="id_token is required")
+    try:
+        decoded = firebase_auth.verify_id_token(id_token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired Firebase token")
+
+    email = decoded.get("email")
+    name = decoded.get("name") or (email.split("@")[0] if email else "User")
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Google account must have an email")
+
+    # Find or create the user
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        user = models.User(
+            name=name,
+            email=email,
+            hashed_password="",  # No password for Google OAuth users
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    # Issue our own JWT session cookie
+    access_token = auth_utils.create_access_token({"sub": str(user.id)})
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 7,  # 7 days
+    )
+    return {"message": "Logged in via Google", "user": {"id": user.id, "name": user.name, "email": user.email}}
 
 
 @router.post("/signup", status_code=status.HTTP_200_OK)
@@ -23,7 +68,7 @@ def signup(payload: schemas.UserCreate, db: Session = Depends(get_db)):
 
     hashed_pwd = auth_utils.hash_password(payload.password)
     otp = utils.generate_otp()
-    expires = datetime.utcnow() + timedelta(minutes=15)
+    expires = datetime.now(timezone.utc) + timedelta(minutes=15)
 
     # Upsert the pending signup (allow resend)
     pending = db.query(models.PendingSignup).filter(models.PendingSignup.email == payload.email).first()
@@ -71,8 +116,8 @@ def verify_otp(payload: schemas.OTPVerify, response: Response, db: Session = Dep
     if not pending:
         raise HTTPException(status_code=404, detail="No pending signup found for this email")
 
-    now_utc = datetime.utcnow()
-    expires_at = pending.otp_expires_at.replace(tzinfo=None) if pending.otp_expires_at else None
+    now_utc = datetime.now(timezone.utc)
+    expires_at = pending.otp_expires_at
 
     if pending.otp_code != payload.otp or expires_at is None or now_utc > expires_at:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
@@ -128,7 +173,7 @@ def forgot_password(payload: schemas.ForgotPassword, db: Session = Depends(get_d
     if user:
         otp = utils.generate_otp()
         user.otp_code = otp
-        user.otp_expires_at = datetime.utcnow() + timedelta(minutes=15)
+        user.otp_expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
         db.commit()
         utils.send_email_via_brevo(
             to_email=payload.email,
@@ -147,8 +192,8 @@ def forgot_password(payload: schemas.ForgotPassword, db: Session = Depends(get_d
 @router.post("/reset-password")
 def reset_password(payload: schemas.ResetPassword, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == payload.email).first()
-    now_utc = datetime.utcnow()
-    expires_at = user.otp_expires_at.replace(tzinfo=None) if user and user.otp_expires_at else None
+    now_utc = datetime.now(timezone.utc)
+    expires_at = user.otp_expires_at
 
     if not user or user.otp_code != payload.otp or expires_at is None or now_utc > expires_at:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")

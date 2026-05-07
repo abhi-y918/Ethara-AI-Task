@@ -21,7 +21,7 @@ def send_email_via_brevo(to_email: str, subject: str, html_content: str):
         "content-type": "application/json"
     }
     payload = {
-        "sender": {"name": "Task Manager", "email": "noreply@taskmanager.com"},
+        "sender": {"name": "Task Manager", "email": "contact@abhinav-yadav.me"},
         "to": [{"email": to_email}],
         "subject": subject,
         "htmlContent": html_content

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 
@@ -82,6 +83,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _service.getMe();
       state = state.copyWith(user: user);
     } catch (_) {}
+  }
+
+  Future<bool> loginWithGoogle() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final googleProvider = GoogleAuthProvider();
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
+      final credential = await FirebaseAuth.instance.signInWithPopup(googleProvider);
+      final idToken = await credential.user!.getIdToken();
+      await _service.googleLogin(idToken!);
+      final user = await _service.getMe();
+      state = state.copyWith(user: user, isLoading: false);
+      return true;
+    } on FirebaseAuthException catch (e) {
+      // Surface the Firebase-specific error code clearly
+      final msg = 'Google Sign-In failed: ${e.code} — ${e.message}';
+      state = state.copyWith(isLoading: false, error: msg);
+      return false;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: _parseError(e));
+      return false;
+    }
   }
 
   Future<void> logout() async {

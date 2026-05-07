@@ -55,6 +55,29 @@ class TaskNotifier extends StateNotifier<TaskState> {
     }
   }
 
+  Future<void> createTask(int projectId, String title, String? description, String dueDate, String priority) async {
+    try {
+      final task = await _service.createTask(projectId, {
+        'title': title,
+        'description': description,
+        'due_date': dueDate,
+        'priority': priority,
+      });
+      state = state.copyWith(tasks: [...state.tasks, task]);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> deleteTask(int taskId) async {
+    try {
+      await _service.deleteTask(taskId);
+      state = state.copyWith(tasks: state.tasks.where((t) => t.id != taskId).toList());
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
   Future<void> loadDashboard() async {
     try {
       final stats = await _service.getDashboardStats();
