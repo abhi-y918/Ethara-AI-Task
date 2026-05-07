@@ -15,6 +15,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   bool _obscurePass = true;
 
   void _showError(String message) {
@@ -62,6 +63,23 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     }
   }
 
+  Future<void> _loginWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      final success = await ref.read(authProvider.notifier).loginWithGoogle();
+      if (success && mounted) {
+        context.go(kRouteDashboard);
+      } else if (mounted) {
+        final error = ref.read(authProvider).error;
+        _showError(error ?? 'Google sign-in was cancelled or failed.');
+      }
+    } catch (e) {
+      if (mounted) _showError('Google sign-in failed: $e');
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,19 +88,27 @@ class _SignupPageState extends ConsumerState<SignupPage> {
           padding: const EdgeInsets.all(24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text('Create Account',
-                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
-                    const SizedBox(height: 6),
-                    const Text('Join your team today',
-                        style: TextStyle(color: Color(0xFFB0B0C0), fontSize: 13)),
-                    const SizedBox(height: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('TASK MANAGER',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED))),
+                const SizedBox(height: 32),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text('Create Account',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
+                        const SizedBox(height: 6),
+                        const Text('Join your team today',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Color(0xFFB0B0C0), fontSize: 13)),
+                        const SizedBox(height: 28),
                     TextField(
                       controller: _nameCtrl,
                       decoration: const InputDecoration(
@@ -122,6 +148,40 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                             : const Text('Create Account', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    Row(children: [
+                      Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('or', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+                      ),
+                      Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                    ]),
+                    const SizedBox(height: 24),
+                    // Google Sign-In Button
+                    SizedBox(
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: _isGoogleLoading ? null : _loginWithGoogle,
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                        ),
+                        icon: _isGoogleLoading
+                            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : Image.network(
+                                'https://www.google.com/favicon.ico',
+                                width: 20,
+                                height: 20,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, color: Colors.white, size: 22),
+                              ),
+                        label: Text(
+                          _isGoogleLoading ? 'Signing in...' : 'Continue with Google',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: () => context.go(kRouteLogin),
@@ -131,8 +191,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 ),
               ),
             ),
-          ),
+          ],
         ),
+      ),
+    ),
       ),
     );
   }

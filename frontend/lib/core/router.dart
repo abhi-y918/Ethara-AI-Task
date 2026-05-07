@@ -10,6 +10,7 @@ import '../pages/projects_page.dart';
 import '../pages/project_detail_page.dart';
 import '../pages/task_detail_page.dart';
 import '../pages/admin_page.dart';
+import '../widgets/app_layout.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -27,19 +28,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      GoRoute(path: kRouteDashboard, builder: (_, __) => const DashboardPage()),
-      GoRoute(path: kRouteProjects,  builder: (_, __) => const ProjectsPage()),
-      GoRoute(
-        path: kRouteProjectDetail,
-        builder: (_, state) => ProjectDetailPage(projectId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: kRouteTaskDetail,
-        builder: (_, state) => TaskDetailPage(taskId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/admin',
-        builder: (_, __) => const AdminPage(),
+      ShellRoute(
+        builder: (context, state, child) {
+          return AppLayout(child: child);
+        },
+        routes: [
+          GoRoute(path: kRouteDashboard, builder: (_, __) => const DashboardPage()),
+          GoRoute(path: kRouteProjects,  builder: (_, __) => const ProjectsPage()),
+          GoRoute(
+            path: kRouteProjectDetail,
+            builder: (_, state) => ProjectDetailPage(projectId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: kRouteTaskDetail,
+            builder: (_, state) => TaskDetailPage(taskId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '/admin',
+            builder: (_, __) => const AdminPage(),
+          ),
+        ],
       ),
     ],
   );

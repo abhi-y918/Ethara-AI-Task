@@ -88,70 +88,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           padding: const EdgeInsets.all(24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(36),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Logo / Icon
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(Icons.task_alt, color: Colors.white, size: 30),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('Welcome Back',
-                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
-                    const SizedBox(height: 6),
-                    const Text('Sign in to your account',
-                        style: TextStyle(color: Color(0xFFB0B0C0), fontSize: 13)),
-                    const SizedBox(height: 28),
-
-                    // Google Sign-In Button
-                    SizedBox(
-                      height: 48,
-                      child: OutlinedButton.icon(
-                        onPressed: _isGoogleLoading ? null : _loginWithGoogle,
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          backgroundColor: Colors.white.withOpacity(0.05),
-                        ),
-                        icon: _isGoogleLoading
-                            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Image.network(
-                                'https://www.google.com/favicon.ico',
-                                width: 20,
-                                height: 20,
-                                errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, color: Colors.white, size: 22),
-                              ),
-                        label: Text(
-                          _isGoogleLoading ? 'Signing in...' : 'Continue with Google',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-                    Row(children: [
-                      Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('or', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
-                      ),
-                      Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
-                    ]),
-                    const SizedBox(height: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('TASK MANAGER',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED))),
+                const SizedBox(height: 32),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(36),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text('WELCOME',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
+                        const SizedBox(height: 6),
+                        const Text('Sign in to your account',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Color(0xFFB0B0C0), fontSize: 13)),
+                        const SizedBox(height: 28),
 
                     TextField(
                       controller: _emailCtrl,
@@ -190,6 +147,40 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             : const Text('Login', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    Row(children: [
+                      Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('or', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+                      ),
+                      Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                    ]),
+                    const SizedBox(height: 24),
+                    // Google Sign-In Button
+                    SizedBox(
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: _isGoogleLoading ? null : _loginWithGoogle,
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                        ),
+                        icon: _isGoogleLoading
+                            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : Image.network(
+                                'https://www.google.com/favicon.ico',
+                                width: 20,
+                                height: 20,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, color: Colors.white, size: 22),
+                              ),
+                        label: Text(
+                          _isGoogleLoading ? 'Signing in...' : 'Continue with Google',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: () => context.go(kRouteSignup),
@@ -199,8 +190,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ),
             ),
-          ),
+          ],
         ),
+      ),
+    ),
       ),
     );
   }

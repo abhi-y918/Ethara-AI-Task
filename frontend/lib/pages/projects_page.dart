@@ -140,68 +140,6 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      drawer: Drawer(
-        backgroundColor: const Color(0xFF1E1F2A),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const Icon(Icons.account_circle, size: 48, color: Colors.white),
-                  const SizedBox(height: 12),
-                  Text(authState.user?.name ?? '', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text(authState.user?.email ?? '', style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard_outlined, color: Colors.white),
-              title: const Text('Dashboard', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(context);
-                context.go('/dashboard');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.folder_outlined, color: Colors.white),
-              title: const Text('Projects', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            if (authState.user?.isSuperadmin == true) ...[
-              const Divider(color: Colors.white12),
-              ListTile(
-                leading: const Icon(Icons.admin_panel_settings, color: Color(0xFFEF4444)),
-                title: const Text('Super Admin Panel', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold)),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.go('/admin');
-                },
-              ),
-            ],
-            const Divider(color: Colors.white12),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.white),
-              title: const Text('Logout', style: TextStyle(color: Colors.white)),
-              onTap: () async {
-                await ref.read(authProvider.notifier).logout();
-                if (context.mounted) context.go('/login');
-              },
-            ),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateDialog,
         backgroundColor: const Color(0xFF7C3AED),
