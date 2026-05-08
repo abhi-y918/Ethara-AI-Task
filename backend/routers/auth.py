@@ -47,7 +47,8 @@ def google_login(payload: dict, response: Response, db: Session = Depends(get_db
         key="access_token",
         value=access_token,
         httponly=True,
-        samesite="lax",
+        samesite="none",
+        secure=True,
         max_age=60 * 60 * 24 * 7,  # 7 days
     )
     return {"message": "Logged in via Google", "user": {"id": user.id, "name": user.name, "email": user.email}}
@@ -136,8 +137,8 @@ def verify_otp(payload: schemas.OTPVerify, response: Response, db: Session = Dep
     # Issue auth cookies immediately after verification
     access_token = auth_utils.create_access_token(data={"sub": str(new_user.id)})
     refresh_token = auth_utils.create_refresh_token(data={"sub": str(new_user.id)})
-    response.set_cookie(key="access_token", value=access_token, httponly=True, samesite="lax", max_age=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, samesite="lax", max_age=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 86400)
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True,samesite="none", max_age=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True,samesite="none", max_age=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 86400)
 
     return {"message": "Email verified. Welcome!", "user": schemas.UserOut.model_validate(new_user)}
 
@@ -161,8 +162,8 @@ def login(payload: schemas.UserLogin, response: Response, db: Session = Depends(
 
     access_token = auth_utils.create_access_token(data={"sub": str(user.id)})
     refresh_token = auth_utils.create_refresh_token(data={"sub": str(user.id)})
-    response.set_cookie(key="access_token", value=access_token, httponly=True, samesite="lax", max_age=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, samesite="lax", max_age=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 86400)
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True,samesite="none", max_age=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True,samesite="none", max_age=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 86400)
 
     return {"message": "Login successful", "user": schemas.UserOut.model_validate(user)}
 

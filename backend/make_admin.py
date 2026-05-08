@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from database import SessionLocal
+# pyrefly: ignore [missing-import]
 from models import User
 import sys
 
